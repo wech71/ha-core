@@ -1,0 +1,38 @@
+"""Base entity for the Edimax integration."""
+
+from __future__ import annotations
+
+from homeassistant.const import ATTR_CONNECTIONS, CONF_MAC
+from homeassistant.helpers.device_registry import (
+    CONNECTION_NETWORK_MAC,
+    DeviceInfo,
+    format_mac,
+)
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from .const import DOMAIN
+from .coordinator import EdimaxDataUpdateCoordinator
+
+
+class EdimaxEntity(CoordinatorEntity[EdimaxDataUpdateCoordinator]):
+    """Defines an Edimax entity."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator: EdimaxDataUpdateCoordinator) -> None:
+        """Initialize an Edimax entity."""
+        super().__init__(coordinator=coordinator)
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, coordinator.data.info.serial_number)},
+            serial_number=coordinator.data.info.serial_number,
+            manufacturer="Edimax",
+            model=coordinator.data.info.product_name,
+            name=coordinator.data.info.display_name,
+            sw_version=coordinator.data.info.version,
+            # sw_version=f"{coordinator.data.info.firmware_version} ({coordinator.data.info.firmware_build_number})",
+            # hw_version=str(coordinator.data.info.hardware_board_type),
+        )
+        if (mac := coordinator.config_entry.data.get(CONF_MAC)) is not None:
+            self._attr_device_info[ATTR_CONNECTIONS] = {
+                (CONNECTION_NETWORK_MAC, format_mac(mac))
+            }
